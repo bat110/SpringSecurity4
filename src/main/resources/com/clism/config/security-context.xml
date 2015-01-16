@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans
+     xmlns="http://www.springframework.org/schema/security"
+     xmlns:beans="http://www.springframework.org/schema/beans"
+     xmlns:context="http://www.springframework.org/schema/context"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="
+     http://www.springframework.org/schema/beans
+     http://www.springframework.org/schema/beans/spring-beans.xsd
+     http://www.springframework.org/schema/context 
+     http://www.springframework.org/schema/context/spring-context.xsd
+     http://www.springframework.org/schema/security
+     http://www.springframework.org/schema/security/spring-security.xsd
+     ">
+
+	<context:component-scan base-package="com.clism.security.." use-default-filters="false">
+		<context:include-filter expression="org.springframework.stereotype.Service" type="annotation" />
+		<context:include-filter expression="org.springframework.stereotype.Repository" type="annotation" />
+	</context:component-scan>
+
+
+	<!-- access-denied-handler 사용하기 위해 삭제
+     <http auto-config="true" use-expressions="true" access-denied-page="/denied">
+    -->
+     <http auto-config="true" use-expressions="true" >
+
+     <form-login
+     login-page="/signin"
+     username-parameter="user_id"
+     password-parameter="password"
+     authentication-success-handler-ref="signinSuccessHandler"
+     authentication-failure-handler-ref="signinFailureHandler"
+     default-target-url="/mypage"
+     always-use-default-target="false"
+     />
+
+     <logout
+     invalidate-session="true"
+     logout-success-url="/signin"
+     logout-url="/signout"
+      />
+      
+	 <access-denied-handler ref="accessFailureHandler" />
+
+     </http>
+
+	 <beans:bean id="accessFailureHandler" class="com.clism.security.AccessFailureHandler">
+	 	<beans:property name="errorPage" value="/403" />
+	 </beans:bean>
+	 
+     <beans:bean id="signinSuccessHandler" class="com.clism.security.SigninSuccessHandler" />
+     <beans:bean id="signinFailureHandler" class="com.clism.security.SigninFailureHandler">
+          <beans:property name="defaultFailureUrl" value="/signin?error=true" />
+     </beans:bean>
+
+	<!-- 
+     <authentication-manager>
+          <authentication-provider>
+               <password-encoder ref="passwordEncoder"/>
+               <user-service>
+                    <user name="guest" password="35675e68f4b5af7b995d9205ad0fc43842f16450" authorities="ROLE_USER"/>
+                    <user name="admin" password="d033e22ae348aeb5660fc2140aec35850c4da997" authorities="ROLE_ADMIN"/>
+               </user-service>
+          </authentication-provider>
+     </authentication-manager>
+     <beans:bean class="org.springframework.security.authentication.encoding.ShaPasswordEncoder" id="passwordEncoder" />
+	-->
+	<beans:bean id="userService" class="com.clism.security.model.UserService" />
+	<beans:bean id="customAuthenticationProvider" class="com.clism.security.CustomAuthenticationProvider" />
+	
+
+    <beans:bean id="encoder" class="org.springframework.security.authentication.encoding.ShaPasswordEncoder" />
+    <beans:bean id="saltSource" class="org.springframework.security.authentication.dao.ReflectionSaltSource">
+        <beans:property name="userPropertyToUse" value="username" />
+    </beans:bean>
+
+	<!-- 
+    <authentication-manager>
+        <authentication-provider user-service-ref="userService">
+            <password-encoder ref="encoder">
+                <salt-source ref="saltSource" />
+            </password-encoder>
+        </authentication-provider>
+    </authentication-manager>
+	 -->
+	<authentication-manager alias="authenticationManager">
+    	<authentication-provider ref="customAuthenticationProvider" />
+    	<authentication-provider user-service-ref="userService">
+        	<password-encoder ref="encoder">
+           		<salt-source ref="saltSource" />
+        	</password-encoder>
+    	</authentication-provider>
+	</authentication-manager>
+	 
+</beans:beans>
